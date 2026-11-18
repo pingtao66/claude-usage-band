@@ -1,0 +1,1 @@
+{ "name": "usage-band", "version": "0.1.0", "description": "對話框上方常駐顯示 Claude 方案用量（5 小時、每週）與每週進度對照", "types": "./types/index.d.ts" }
