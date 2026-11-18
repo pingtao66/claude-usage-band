@@ -4,6 +4,11 @@ import type { Register } from 'claude-code'
 import type { Limit } from '../types'
 
 const limits = atom({ plugin: 'usage-band', key: 'limits' } as const, [] as Limit[])
+const context = atom({ plugin: 'usage-band', key: 'context' } as const, null as number | null)
+
+// 對話內容量門檻：25% 以下正常、25–50% 黃燈、50% 以上紅燈
+const CTX_YELLOW = 25
+const CTX_RED = 50
 
 const HOUR = 3600_000
 const DAY = 24 * HOUR
@@ -38,12 +43,16 @@ export const register: Register = on => {
     const r = await next(e)
     const u = await $.session.usage()
     if (u.rateLimits.length > 0) await update($, limits, () => pick(u.rateLimits))
+    if (u.context.percent !== undefined) await update($, context, () => u.context.percent ?? null)
     return r
   })
 
   on('session.measure', async ($, e, next) => {
     if (e.changed.includes('rateLimits') && e.rateLimits.length > 0) {
       await update($, limits, () => pick(e.rateLimits))
+    }
+    if (e.changed.includes('context') && e.context.percent !== undefined) {
+      await update($, context, () => e.context.percent ?? null)
     }
     return next(e)
   })
@@ -102,10 +111,24 @@ export const register: Register = on => {
       )
     }
 
+    const ctx = await read($, context)
+    let ctxRow = null
+    if (ctx !== null) {
+      const label = ctx >= CTX_RED ? '現在就收尾、換新對話' : ctx >= CTX_YELLOW ? '這件做完就換' : '正常'
+      const color = ctx >= CTX_RED ? 'error' : ctx >= CTX_YELLOW ? 'warning' : 'success'
+      ctxRow = (
+        <Text>
+          <Text dimColor>{'　　'}這個對話 {ctx}%｜</Text>
+          <Text color={color}>{label}</Text>
+        </Text>
+      )
+    }
+
     return (
       <Box>
         {weekRow}
         {fiveRow}
+        {ctxRow}
       </Box>
     )
   })
