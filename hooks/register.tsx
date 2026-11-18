@@ -73,12 +73,24 @@ export const register: Register = on => {
       )
     }
 
-    // 一項一行：左欄固定寬（數字），中間是判斷（有顏色），右邊細節放不下就截掉，不換行
-    const row = (key: string, head: string, status: string, color: string | undefined, detail: string) => (
+    // 一項一行：名稱欄固定寬、百分比欄固定寬且靠右（個位、十位上下對齊），
+    // 中間是判斷（有顏色），右邊細節放不下就截掉，不換行
+    const row = (
+      key: string,
+      name: string,
+      pct: number,
+      status: string,
+      color: string | undefined,
+      detail: string,
+    ) => (
       <Box key={key} flexDirection="row">
-        <Box width={11} flexShrink={0}>
-          <Text bold wrap="truncate-end">{head}</Text>
+        <Box width={6} flexShrink={0}>
+          <Text bold wrap="truncate-end">{name}</Text>
         </Box>
+        <Box width={4} flexShrink={0} justifyContent="flex-end">
+          <Text bold wrap="truncate-end">{`${pct}%`}</Text>
+        </Box>
+        <Box width={2} flexShrink={0} />
         <Box flexShrink={0}>
           <Text bold color={color} wrap="truncate-end">{status}</Text>
         </Box>
@@ -90,6 +102,14 @@ export const register: Register = on => {
 
     const rows = []
 
+    if (five) {
+      const reset = five.resetsAt ? Date.parse(five.resetsAt) : NaN
+      const hasReset = !isNaN(reset) && reset > now
+      const used = !isNaN(reset) && reset <= now ? 0 : five.percentUsed
+      const color = used >= 90 ? 'error' : used >= 70 ? 'warning' : undefined
+      rows.push(row('f', '5小時', used, hasReset ? `${left(reset - now)}後重置` : '', color, ''))
+    }
+
     if (week) {
       const reset = week.resetsAt ? Date.parse(week.resetsAt) : NaN
       const hasReset = !isNaN(reset) && reset > now
@@ -99,25 +119,17 @@ export const register: Register = on => {
         const gap = used - elapsed
         const label = gap < -10 ? '偏慢，可以多用' : gap > 10 ? '偏快，省著用' : '剛好'
         const color = gap < -10 ? 'warning' : gap > 10 ? 'error' : 'success'
-        rows.push(row('w', `每週 ${used}%`, label, color, `時間已過 ${elapsed}%｜${at(reset)} 重置，剩 ${left(reset - now)}`))
+        rows.push(row('w', '每週', used, label, color, `時間已過 ${elapsed}%｜${at(reset)} 重置，剩 ${left(reset - now)}`))
       } else {
-        rows.push(row('w', `每週 ${used}%`, '', undefined, ''))
+        rows.push(row('w', '每週', used, '', undefined, ''))
       }
-    }
-
-    if (five) {
-      const reset = five.resetsAt ? Date.parse(five.resetsAt) : NaN
-      const hasReset = !isNaN(reset) && reset > now
-      const used = !isNaN(reset) && reset <= now ? 0 : five.percentUsed
-      const color = used >= 90 ? 'error' : used >= 70 ? 'warning' : undefined
-      rows.push(row('f', `5小時 ${used}%`, hasReset ? `${left(reset - now)}後重置` : '', color, ''))
     }
 
     const ctx = await read($, context)
     if (ctx !== null) {
       const label = ctx >= CTX_RED ? '現在就收尾、換新對話' : ctx >= CTX_YELLOW ? '這件做完就換' : '正常'
       const color = ctx >= CTX_RED ? 'error' : ctx >= CTX_YELLOW ? 'warning' : 'success'
-      rows.push(row('c', `對話 ${ctx}%`, label, color, '這個對話的內容量'))
+      rows.push(row('c', '對話', ctx, label, color, '這個對話的內容量'))
     }
 
     return <Box flexDirection="column">{rows}</Box>

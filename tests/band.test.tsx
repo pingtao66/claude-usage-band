@@ -33,10 +33,10 @@ test('三行各自一行，窄寬與寬螢幕、各介面都畫得出來', async
   for (const surface of ['terminal', 'desktop', 'mobile'] as const) {
     for (const cols of [30, 120]) {
       const ui = await $.ui.mount({ ...band(cols), surface })
-      expect((await ui.find({ type: 'Text', text: /每週 25%/ }))?.text).toBe('每週 25%')
+      expect((await ui.find({ type: 'Text', text: /^25%$/ }))?.text).toBe('25%')
       expect((await ui.find({ type: 'Text', text: /偏慢/ }))?.text).toBe('偏慢，可以多用')
-      expect((await ui.find({ type: 'Text', text: /5小時 41%/ }))?.text).toBe('5小時 41%')
-      expect((await ui.find({ type: 'Text', text: /對話 20%/ }))?.text).toBe('對話 20%')
+      expect((await ui.find({ type: 'Text', text: /^41%$/ }))?.text).toBe('41%')
+      expect((await ui.find({ type: 'Text', text: /^20%$/ }))?.text).toBe('20%')
       expect((await ui.find({ type: 'Text', text: /^正常$/ }))?.text).toBe('正常')
       await ui.unmount()
     }
